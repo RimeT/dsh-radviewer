@@ -18,14 +18,16 @@ DeepSeek Harness 右侧栏里的放射影像查看器。打开 DICOM、NIfTI、N
 
 1. 打开 **Plugins**。
 2. **Add plugin** → **Install a third-party plugin**。
-3. 填入：
+3. 在输入框填 npm 包名：
 
    ```
-   github:RimeT/dsh-radviewer
+   dsh-radviewer
    ```
 
-   仓库页面：[github.com/RimeT/dsh-radviewer](https://github.com/RimeT/dsh-radviewer)。已经克隆到本机时，也可以填这个文件夹的路径。
+   安装源用官方 npm，或用中国大陆镜像。镜像刚同步时可能还没有这一版，等一两分钟再装，或改回官方源。
 4. 装好后完全退出桌面版，再重新打开。右侧会出现「医学三维」。
+
+本机已经克隆仓库时，也可以填这个文件夹的路径。源码在 [github.com/RimeT/dsh-radviewer](https://github.com/RimeT/dsh-radviewer)。
 
 查看器已经打好包，安装时不用在本机编译，也不会带上示例影像。
 

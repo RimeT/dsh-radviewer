@@ -3,6 +3,7 @@ samples/
 dist/
 .vite/
 *.log
+*.tgz
 .DS_Store
 dev-dist/
 .dsh-acl-recovery/

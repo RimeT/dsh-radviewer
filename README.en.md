@@ -18,14 +18,16 @@ You need the DeepSeek Harness desktop app (used here on 0.2.1-rc).
 
 1. Open **Plugins**.
 2. Choose **Add plugin** → **Install a third-party plugin**.
-3. Enter:
+3. Enter the npm package name:
 
    ```
-   github:RimeT/dsh-radviewer
+   dsh-radviewer
    ```
 
-   Repository: [github.com/RimeT/dsh-radviewer](https://github.com/RimeT/dsh-radviewer). If you already cloned it, you can enter that folder path instead.
+   Use the official npm registry, or the China mirror. A mirror can take a minute to see a new release; wait and retry, or switch the install source back to the official registry.
 4. Quit the desktop app completely, then open it again. MedView shows up in the right sidebar.
+
+If you already cloned the repo, you can enter that folder path instead. Source: [github.com/RimeT/dsh-radviewer](https://github.com/RimeT/dsh-radviewer).
 
 The viewer is already built. Installing it does not compile anything, and it does not download a sample volume.
 

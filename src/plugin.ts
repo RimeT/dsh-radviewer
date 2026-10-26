@@ -4,8 +4,10 @@ import { messages } from './messages.ts';
 import { baseName } from './study.ts';
 import { parseSessionFile, Viewer } from './Viewer.tsx';
 
-const PAGE_ID = '@local/dsh-medview';
-const VOLUME_ID = '@local/dsh-medview/volume';
+declare const __MEDVIEW_PACKAGE_NAME__: string;
+
+const PAGE_ID = __MEDVIEW_PACKAGE_NAME__;
+const VOLUME_ID = `${PAGE_ID}/volume`;
 
 interface RemoteError {
   message?: string;

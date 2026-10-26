@@ -6,6 +6,11 @@ import path from 'node:path';
 const worker = spawnSync(process.execPath, ['scripts/build-worker.mjs'], { stdio: 'inherit' });
 if (worker.status !== 0) process.exit(worker.status ?? 1);
 
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+const patch = readFileSync('cordis.patch.yml', 'utf8');
+if (!patch.includes(`name: ${pkg.name}`) && !patch.includes(`name: '${pkg.name}'`)) {
+  throw new Error(`cordis.patch.yml name must match package.json name ${pkg.name}`);
+}
 const workerSource = readFileSync('dist/volume.worker.js', 'utf8');
 
 const raw = {
@@ -34,10 +39,13 @@ await esbuild.build({
   minify: true,
   legalComments: 'none',
   external: ['react', 'react/jsx-runtime'],
-  define: { __MEDVIEW_WORKER_SOURCE__: JSON.stringify(workerSource) },
+  define: {
+    __MEDVIEW_WORKER_SOURCE__: JSON.stringify(workerSource),
+    __MEDVIEW_PACKAGE_NAME__: JSON.stringify(pkg.name),
+  },
   plugins: [raw],
   banner: {
-    js: "window.__ModuleLoader__.load({id:'@local/dsh-medview',factory(require){var module={exports:{}};var exports=module.exports;",
+    js: `window.__ModuleLoader__.load({id:${JSON.stringify(pkg.name)},factory(require){var module={exports:{}};var exports=module.exports;`,
   },
   footer: { js: 'return module.exports;}});' },
 });
