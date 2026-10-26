@@ -2,81 +2,79 @@
 
 [English](README.en.md)
 
-DeepSeek Harness 右侧栏里的放射影像查看器。打开 DICOM、NIfTI、NRRD，把配对的 mask 叠在切面上，并用不同颜色画出各类 ROI。
+DeepSeek Harness 右侧栏中的放射影像查看器。支持 DICOM、NIfTI 与 NRRD，可在切面上叠加配对 mask，并以不同颜色显示各类 ROI。
 
-当前版本 **0.1.0-alpha.1**。界面名称是「医学三维」，英文界面是 MedView。斜杠命令是 `/radviewer`。
+当前版本 0.1.0-alpha.2。中文界面名称为「医学三维」，英文为 MedView。斜杠命令为 `/radviewer`。
 
-插件代码使用 [MIT 许可证](LICENSE)。
+## 环境
 
-![cas045 在查看器中的轴位、矢状位、冠状位和三维血管](docs/images/cas045.png)
-
-上图是界面示例。绿色是动脉 mask。界面语言跟随桌面版。这张图对应的影像文件不在本仓库里。
+DeepSeek Harness 桌面版 0.2.1-rc。
 
 ## 安装
 
-需要 DeepSeek Harness 桌面版（在 0.2.1-rc 上用过）。
-
 1. 打开 **Plugins**。
-2. **Add plugin** → **Install a third-party plugin**。
-3. 在输入框填 npm 包名：
+2. 选择 **Add plugin** → **Install a third-party plugin**。
+3. 安装源选择官方 npm registry：`https://registry.npmjs.org/`。
+4. 填入包名：
 
    ```
    dsh-radviewer
    ```
 
-   安装源用官方 npm，或用中国大陆镜像。镜像刚同步时可能还没有这一版，等一两分钟再装，或改回官方源。
-4. 装好后完全退出桌面版，再重新打开。右侧会出现「医学三维」。
+5. 安装完成后完全退出并重新打开桌面版。右侧栏出现「医学三维」。
 
-本机已经克隆仓库时，也可以填这个文件夹的路径。源码在 [github.com/RimeT/dsh-radviewer](https://github.com/RimeT/dsh-radviewer)。
+中国大陆镜像（`https://registry.npmmirror.com/`）在同步完成前会解析到占位版本 `0.0.0-stage`。请改用官方 registry 安装。
 
-查看器已经打好包，安装时不用在本机编译，也不会带上示例影像。
+已克隆本仓库时，也可填入仓库目录路径。源码：[github.com/RimeT/dsh-radviewer](https://github.com/RimeT/dsh-radviewer)。
 
-## 打开一幅图
+## 打开检查
 
-把 DICOM、NIfTI 或 NRRD 放进当前对话的工作区。
+将 DICOM、NIfTI 或 NRRD 置于当前对话的工作区。
 
-- 右侧点「医学三维」，填写文件夹，扫描，再点开检查。
-- 对话里输入 `/radviewer`，后面跟工作区里的文件或文件夹。
-- 在对话里 @ 一个 DICOM 文件夹、`.dcm`、`.nii` / `.nii.gz`，或 `.nrrd` / `.nrrd.gz` / `.nhdr`。模型会在右侧标签页打开它。
+- 在右侧打开「医学三维」，填写文件夹并扫描，然后打开检查。
+- 在对话中输入 `/radviewer` 及工作区路径。仅输入 `/radviewer` 时打开检查列表。
+- 在对话中 @ DICOM 文件夹、`.dcm`、`.nii` / `.nii.gz`，或 `.nrrd` / `.nrrd.gz` / `.nhdr`。
 
-只输入 `/radviewer` 会打开检查列表。
+左键拖动调节窗宽窗位，滚轮切换层面，单击设置十字线，中键平移，右键缩放。三维视窗支持旋转。
 
-左键拖动调节窗宽窗位，滚轮翻层，单击放置十字线，中键平移，右键缩放。三维那一格可以旋转。
-
-## 能打开的文件
+## 文件格式
 
 | 格式 | 路径 |
 | --- | --- |
-| DICOM | 一个 `.dcm`，或同一文件夹里的一组切片（未压缩 16-bit little-endian） |
+| DICOM | 单个 `.dcm`，或同一目录中的未压缩 16-bit little-endian 序列 |
 | NIfTI | `.nii`、`.nii.gz` |
-| NRRD | `.nrrd`、`.nrrd.gz`、`.nhdr`（数据文件放在旁边） |
+| NRRD | `.nrrd`、`.nrrd.gz`、`.nhdr`（数据文件与头文件同目录） |
 
-Mask 和影像放在同一目录，名字成对：
+Mask 与影像位于同一目录，文件名成对：
 
-- `image.nii.gz` 配 `mask.nii.gz`，或 `xxx.nii.gz` 配 `xxx-label.nii.gz`
-- `image.nrrd` 配 `mask.nrrd`，`vol.nhdr` 配 `vol-label.nhdr`
+- `image.nii.gz` 与 `mask.nii.gz`，或 `xxx.nii.gz` 与 `xxx-label.nii.gz`
+- `image.nrrd` 与 `mask.nrrd`，或 `vol.nhdr` 与 `vol-label.nhdr`
 
-类别 0 不显示。类别 1 绿色，2 青色，3 品红。
+类别 0 不显示。类别 1 为绿色，2 为青色，3 为品红。
 
-NRRD 可读 raw、gzip、ascii，以及整文件压缩的 `.nrrd.gz`。头里的坐标按 LPS 显示；写成 RAS 时会转到 LPS。bzip2、zstd 和向量 / RGB 不在这一版里。
+NRRD 支持 raw、gzip、ascii，以及整文件 gzip 的 `.nrrd.gz`。坐标按 LPS 显示；头文件标明 RAS 时转换为 LPS。bzip2、zstd，以及向量或 RGB 体数据不在本版本范围内。
 
-## 截图里的病例
+## 示例
 
-截图来自 MICCAI 2023 Cerebral Artery Segmentation Challenge（CAS 2023，亦见于 SMRA 2023）的一个训练病例，编号 cas045。任务是从症状性颅内动脉狭窄患者的三维 TOF-MRA 中分割脑动脉。
+![cas045 的轴位、矢状位、冠状位与三维血管](docs/images/cas045.png)
 
-本仓库只放这张界面图，不附带 `image.nii.gz` 和 `mask.nii.gz`。要看自己的数据，请从竞赛获取，再放到工作区里打开。数据集许可证是 [CC BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/)：可以原样转发，必须署名，改过的数据文件不能再公开传播。MIT 只覆盖本插件的代码。
+截图所示为 MICCAI 2023 Cerebral Artery Segmentation Challenge（CAS 2023）训练病例 cas045。该挑战的任务是在症状性颅内动脉狭窄患者的三维 TOF-MRA 上分割脑动脉。
 
 > Huijun Chen, Xihai Zhao, Haozhong Sun, Jiaqi Dou, Chenlin Du, Runyu Yang, Xiaoqi Lin, Shuwan Yu, Jiachen Liu, Chun Yuan, Niranjan Balu. Cerebral artery segmentation Challenge, MICCAI 2023. Zenodo. [https://doi.org/10.5281/zenodo.7839969](https://doi.org/10.5281/zenodo.7839969)
 
 - 数据说明：[10.5281/zenodo.7839970](https://doi.org/10.5281/zenodo.7839970)
-- 竞赛页面：[Codalab](https://codalab.lisn.upsaclay.fr/competitions/9804)
+- 竞赛：[Codalab](https://codalab.lisn.upsaclay.fr/competitions/9804)
 - 介绍：[SMRA CAS 2023](https://society4mra.org/cerebral-artery-segmentation-challenge-cas2023/)
 
-## 改代码
+## 开发
 
 ```bash
 npm install
 npm run build
 ```
 
-`npm run build` 会重新生成 `client.js`。改完界面后重启桌面版。
+修改界面后需重新执行 `npm run build` 并重启桌面版。
+
+## 许可证
+
+插件代码采用 [MIT 许可证](LICENSE)。
