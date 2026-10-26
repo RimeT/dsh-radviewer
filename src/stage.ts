@@ -4,7 +4,7 @@ import { planesFromAxes, screenToVoxel, voxelToScreen } from './planes.ts';
 import { classColor } from './palette.ts';
 import { blitFragment, blitVertex, volumeFragment, volumeVertex } from './shaders.ts';
 import { renderSlice, sampleValue } from './slice.ts';
-import type { Axis, ClassMesh, Dims, PlaneMap, PreparedStudy, Vec3 } from './types.ts';
+import type { Axis, ClassMesh, PlaneMap, PreparedStudy } from './types.ts';
 
 export type ViewId = 'axial' | 'sagittal' | 'coronal' | 'volume';
 
@@ -654,12 +654,4 @@ function putCross(target: THREE.Line, point: THREE.Vector3, arm: number, axis: A
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-export function fixedCount(dims: Dims, plane: PlaneMap): number {
-  return dims[plane.fixedAxis];
-}
-
-export function spacingOf(spacing: Vec3, axis: Axis): number {
-  return spacing[axis];
 }

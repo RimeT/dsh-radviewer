@@ -4,6 +4,7 @@ import { planesFromAxes } from './planes.ts';
 import { createVolumeWorker } from './createWorker.ts';
 import { runWorker } from './runWorker.ts';
 import { MedStage, type CellRect, type ViewId, type ViewState } from './stage.ts';
+import { nrrdDataFiles, nrrdFileBytes } from './nrrd.ts';
 import { joinPath, parentPath, studiesFromListing, studyForPath, type DirEntry } from './study.ts';
 import { sampleValue } from './slice.ts';
 import type { PreparedStudy, StudySource } from './types.ts';
@@ -193,6 +194,20 @@ function Studio(props: ViewerProps & { address?: string; revision?: number; life
     return copy.buffer;
   }
 
+  async function readNrrd(path: string, signal: AbortSignal): Promise<{ image: ArrayBuffer; parts: ArrayBuffer[] }> {
+    const header = await nrrdFileBytes(new Uint8Array(await readBuffer(path, signal)));
+    const dir = parentPath(path);
+    const parts: ArrayBuffer[] = [];
+    for (const file of nrrdDataFiles(header)) {
+      const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '');
+      const resolved = /^[A-Za-z]:\//.test(normalized) || normalized.startsWith('//') || normalized.startsWith('/')
+        ? normalized.replace(/^\/(?![/])/, '')
+        : joinPath(dir, normalized);
+      parts.push(await readBuffer(resolved, signal));
+    }
+    return { image: header.buffer.slice(header.byteOffset, header.byteOffset + header.byteLength), parts };
+  }
+
   async function scan(signal: AbortSignal) {
     setScanning(true);
     setError(null);
@@ -240,17 +255,23 @@ function Studio(props: ViewerProps & { address?: string; revision?: number; life
     setProgress(0.04);
     setError(null);
     try {
-      const images = await mapLimit(study.imagePaths, 6, (path) => readBuffer(path, lifetime), lifetime);
+      const images = study.kind === 'nrrd'
+        ? []
+        : await mapLimit(study.imagePaths, 6, (path) => readBuffer(path, lifetime), lifetime);
+      const nrrdImage = study.kind === 'nrrd' ? await readNrrd(study.imagePaths[0]!, lifetime) : undefined;
+      const nrrdMask = study.kind === 'nrrd' && study.maskPath ? await readNrrd(study.maskPath, lifetime) : undefined;
       setProgress(0.35);
-      const mask = study.maskPath ? await readBuffer(study.maskPath, lifetime) : undefined;
+      const mask = study.kind === 'nrrd' ? nrrdMask?.image : study.maskPath ? await readBuffer(study.maskPath, lifetime) : undefined;
       const worker = workerRef.current ?? createVolumeWorker();
       workerRef.current = worker;
       const next = await runWorker(worker, {
-        op: study.kind === 'dicom' ? 'dicom' : 'nifti',
+        op: study.kind,
         name: study.title,
-        image: study.kind === 'nifti' ? images[0] : undefined,
+        image: study.kind === 'dicom' ? undefined : nrrdImage?.image ?? images[0],
         mask,
         slices: study.kind === 'dicom' ? images : undefined,
+        imageParts: nrrdImage?.parts,
+        maskParts: nrrdMask?.parts,
       }, lifetime, setProgress);
       if (lifetime.aborted) return;
       setHidden(new Set());

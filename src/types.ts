@@ -43,7 +43,7 @@ export interface PreparedStudy {
 export interface StudySource {
   id: string;
   title: string;
-  kind: 'nifti' | 'dicom';
+  kind: 'nifti' | 'nrrd' | 'dicom';
   imagePaths: string[];
   maskPath?: string;
 }

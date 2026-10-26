@@ -17,8 +17,7 @@
 .mv-root *::after { box-sizing: border-box; }
 
 .mv-bar,
-.mv-library,
-.mv-status {
+.mv-library {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -58,10 +57,6 @@
   outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-alias-state-business-primary, #3d9eff);
   outline-offset: 2px;
 }
-.mv-btn[data-on="true"] {
-  background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #3d9eff) 22%, transparent);
-}
-
 .mv-field { height: 28px; padding: 0 8px; min-width: 0; }
 .mv-path { width: min(280px, 40vw); }
 

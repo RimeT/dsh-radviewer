@@ -10,7 +10,6 @@ interface ProgressMessage {
   id: number;
   op: 'progress';
   ratio: number;
-  label: string;
 }
 interface ErrorMessage {
   id: number;
@@ -24,7 +23,7 @@ let nextId = 1;
 
 export function runWorker(
   worker: Worker,
-  request: { op: 'nifti' | 'dicom'; name: string; image?: ArrayBuffer; mask?: ArrayBuffer; slices?: ArrayBuffer[] },
+  request: { op: 'nifti' | 'nrrd' | 'dicom'; name: string; image?: ArrayBuffer; mask?: ArrayBuffer; slices?: ArrayBuffer[]; imageParts?: ArrayBuffer[]; maskParts?: ArrayBuffer[] },
   signal: AbortSignal,
   onProgress: (ratio: number) => void,
 ): Promise<PreparedStudy> {
@@ -50,7 +49,7 @@ export function runWorker(
       onAbort();
       return;
     }
-    const transfers = [request.image, request.mask, ...(request.slices ?? [])].filter((item): item is ArrayBuffer => item !== undefined);
+    const transfers = [request.image, request.mask, ...(request.slices ?? []), ...(request.imageParts ?? []), ...(request.maskParts ?? [])].filter((item): item is ArrayBuffer => item !== undefined);
     worker.postMessage({ id, ...request }, transfers);
   });
 }

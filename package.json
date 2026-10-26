@@ -1,8 +1,13 @@
 {
   "name": "@local/dsh-medview",
-  "version": "0.2.1-rc.2",
+  "version": "0.1.0-alpha.1",
+  "license": "MIT",
   "private": true,
   "description": "Interactive 3D medical image viewer for the DSH sidebar.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RimeT/dsh-radviewer.git"
+  },
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -12,10 +17,12 @@
   },
   "files": [
     "index.js",
+    "medview-path.js",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
@@ -25,7 +32,8 @@
       "inject": [
         "@deepseek-ai/dsh-client-ui-sidebar-right",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-api-workspace-files"
+        "@deepseek-ai/dsh-api-workspace-files",
+        "@deepseek-ai/dsh-api-session-controller"
       ]
     }
   },

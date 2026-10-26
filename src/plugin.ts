@@ -1,4 +1,5 @@
 import styles from './styles.css?raw';
+import { watchMedicalOpens } from './bridge.ts';
 import { messages } from './messages.ts';
 import { baseName } from './study.ts';
 import { parseSessionFile, Viewer } from './Viewer.tsx';
@@ -23,6 +24,8 @@ interface WorkspaceFiles {
 
 interface PluginContext {
   effect(callback: () => void | (() => void)): void;
+  sidebarRight: Parameters<typeof watchMedicalOpens>[0]['sidebarRight'];
+  sessions: Parameters<typeof watchMedicalOpens>[0]['sessions'];
   locale: {
     register(ns: string, locale: string, dict: Record<string, string>): () => void;
     bind(ns: string): (key: string, params?: Record<string, string | number>) => string;
@@ -37,7 +40,7 @@ interface PluginContext {
   remote: { workspaceFiles: WorkspaceFiles };
 }
 
-export const inject = ['slots', 'locale', 'sidebarRightTabs', 'remote', 'remote.workspaceFiles'];
+export const inject = ['slots', 'locale', 'sidebarRightTabs', 'sidebarRight', 'sessions', 'remote', 'remote.workspaceFiles'];
 
 function readers(ctx: PluginContext, sessionId: string) {
   return {
@@ -53,7 +56,7 @@ function readers(ctx: PluginContext, sessionId: string) {
 function titleFromAddress(address: string): string {
   const parsed = parseSessionFile(address);
   const name = baseName(parsed?.path || address);
-  return name.replace(/\.nii\.gz$/i, '').replace(/\.nii$/i, '').replace(/\.dcm$/i, '') || name;
+  return name.replace(/\.(?:nii\.gz|nii|nrrd\.gz|nrrd|nhdr|dcm)$/i, '') || name;
 }
 
 export function apply(ctx: PluginContext): void {
@@ -91,10 +94,10 @@ export function apply(ctx: PluginContext): void {
     id: VOLUME_ID,
     kind: 'medview-volume',
     priority: 'extension',
-    patterns: ['*.nii', '*.nii.gz', '*.dcm'],
+    patterns: ['*.nii', '*.nii.gz', '*.nrrd', '*.nrrd.gz', '*.nhdr', '*.dcm'],
     multiple: true,
     keepMounted: true,
-    canOpen: (address: string) => /\.(?:nii(?:\.gz)?|dcm)(?:[?#]|$)/i.test(address),
+    canOpen: (address: string) => /\.(?:nii(?:\.gz)?|nrrd(?:\.gz)?|nhdr|dcm)(?:[?#]|$)/i.test(address),
     title: (address: string) => titleFromAddress(address),
   }));
 
@@ -111,5 +114,13 @@ export function apply(ctx: PluginContext): void {
       stopPage();
       stopVolume();
     };
+  });
+
+  ctx.effect(() => {
+    try {
+      return watchMedicalOpens(ctx);
+    } catch {
+      return undefined;
+    }
   });
 }

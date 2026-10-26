@@ -3,8 +3,10 @@ import type { DirEntry, StudySource } from './types.ts';
 export type { DirEntry };
 
 const NIFTI_RE = /\.nii(?:\.gz)?$/i;
+const NRRD_RE = /\.(?:nrrd(?:\.gz)?|nhdr)$/i;
 const DICOM_RE = /\.dcm$/i;
-const LABEL_RE = /^(?:mask\.nii(?:\.gz)?|.+-label\.nii(?:\.gz)?)$/i;
+const VOLUME_EXT = String.raw`(?:nii(?:\.gz)?|nrrd(?:\.gz)?|nhdr)`;
+const LABEL_RE = new RegExp(String.raw`^(?:mask\.${VOLUME_EXT}|.+-label\.${VOLUME_EXT})$`, 'i');
 
 export function joinPath(dir: string, name: string): string {
   const root = dir.replace(/\\/g, '/').replace(/\/$/, '');
@@ -22,16 +24,25 @@ export function baseName(path: string): string {
   return normalized.slice(normalized.lastIndexOf('/') + 1);
 }
 
+const MASK_EXTS = ['nii.gz', 'nii', 'nrrd', 'nrrd.gz', 'nhdr'];
+
+function volumeStem(name: string): string {
+  return name.replace(new RegExp(String.raw`\.${VOLUME_EXT}$`, 'i'), '');
+}
+
 function maskName(image: string, names: Set<string>): string | undefined {
-  if (/^image\.nii(?:\.gz)?$/i.test(image)) {
-    if (names.has('mask.nii.gz')) return 'mask.nii.gz';
-    if (names.has('mask.nii')) return 'mask.nii';
+  const stem = volumeStem(image);
+  const exts = NIFTI_RE.test(image) ? ['nii.gz', 'nii'] : NRRD_RE.test(image) ? ['nrrd', 'nrrd.gz', 'nhdr'] : MASK_EXTS;
+  if (/^image$/i.test(stem)) {
+    for (const ext of exts) {
+      const mask = `mask.${ext}`;
+      if (names.has(mask)) return mask;
+    }
   }
-  const stem = image.replace(/\.nii(?:\.gz)?$/i, '');
-  const gzip = `${stem}-label.nii.gz`;
-  const plain = `${stem}-label.nii`;
-  if (names.has(gzip)) return gzip;
-  if (names.has(plain)) return plain;
+  for (const ext of exts) {
+    const label = `${stem}-label.${ext}`;
+    if (names.has(label)) return label;
+  }
   return undefined;
 }
 
@@ -47,12 +58,13 @@ export function studiesFromListing(dir: string, entries: readonly DirEntry[]): S
   }
   const names = new Set(files.map((entry) => entry.name));
   for (const file of files) {
-    if (!NIFTI_RE.test(file.name) || LABEL_RE.test(file.name)) continue;
+    const nrrd = NRRD_RE.test(file.name);
+    if ((!NIFTI_RE.test(file.name) && !nrrd) || LABEL_RE.test(file.name)) continue;
     const mask = maskName(file.name, names);
     studies.push({
       id: joinPath(dir, file.name),
-      title: file.name.replace(/\.nii(?:\.gz)?$/i, ''),
-      kind: 'nifti',
+      title: volumeStem(file.name),
+      kind: nrrd ? 'nrrd' : 'nifti',
       imagePaths: [joinPath(dir, file.name)],
       maskPath: mask ? joinPath(dir, mask) : undefined,
     });

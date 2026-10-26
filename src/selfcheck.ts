@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { gunzipSync } from 'node:zlib';
-import { prepareDicomBytes, prepareNiftiBytes, volumeFromSlices } from './assemble.ts';
+import { gunzipSync, gzipSync } from 'node:zlib';
+import { prepareDicomBytes, prepareNiftiBytes, prepareNrrdBytes, volumeFromSlices } from './assemble.ts';
+import { decodeNrrd, nrrdDataFiles } from './nrrd.ts';
 import { decodeDicom } from './dicom.ts';
 import { meshLabel } from './marchingCubes.ts';
 import { planesFromAxes } from './planes.ts';
@@ -99,6 +100,70 @@ const preparedDicom = prepareDicomBytes([
 assert(preparedDicom.volume.dims[2] === 2, 'two-slice series');
 assert(Math.abs(preparedDicom.volume.spacing[2] - 1) < 0.05, `adjacent spacing ${preparedDicom.volume.spacing[2]}`);
 assert(preparedDicom.labels === null, 'dicom mask');
+
+const nrrdStudies = studiesFromListing('samples/nrrd', [
+  { name: 'image.nrrd', type: 'file' },
+  { name: 'mask.nrrd', type: 'file' },
+  { name: 'vol.nhdr', type: 'file' },
+  { name: 'vol-label.nhdr', type: 'file' },
+]);
+assert(nrrdStudies.length === 2, `nrrd studies ${nrrdStudies.length}`);
+assert(nrrdStudies[0]?.kind === 'nrrd' && nrrdStudies[0]?.maskPath === 'samples/nrrd/mask.nrrd', 'nrrd mask pairing');
+assert(nrrdStudies[1]?.maskPath === 'samples/nrrd/vol-label.nhdr', 'nhdr label pairing');
+
+const nrrdRaw = new Uint8Array(64 * 2);
+const nrrdView = new DataView(nrrdRaw.buffer);
+for (let z = 0; z < 4; z += 1) {
+  for (let y = 0; y < 4; y += 1) {
+    for (let x = 0; x < 4; x += 1) nrrdView.setInt16((x + y * 4 + z * 16) * 2, x + 10 * y + 100 * z, true);
+  }
+}
+const nrrdMask = new Uint8Array(64);
+for (let z = 1; z <= 2; z += 1) {
+  for (let y = 1; y <= 2; y += 1) {
+    for (let x = 1; x <= 2; x += 1) nrrdMask[x + y * 4 + z * 16] = 1;
+  }
+}
+const nrrdHead = `NRRD0004
+type: short
+dimension: 3
+space: left-posterior-superior
+sizes: 4 4 4
+space directions: (2,0,0) (0,3,0) (0,0,4)
+encoding: raw
+endian: little
+`;
+const attachNrrd = (text: string, data: Uint8Array) => {
+  const head = new TextEncoder().encode(`${text.trim()}\n\n`);
+  const out = new Uint8Array(head.length + data.length);
+  out.set(head);
+  out.set(data, head.length);
+  return out;
+};
+const nrrdImage = attachNrrd(nrrdHead, nrrdRaw);
+const nrrdLabel = attachNrrd(nrrdHead.replace('type: short', 'type: uchar'), nrrdMask);
+const nrrdStudy = await prepareNrrdBytes(nrrdImage, undefined, nrrdLabel, undefined, 'nrrd');
+assert(nrrdStudy.volume.dims.join('x') === '4x4x4', `nrrd dims ${nrrdStudy.volume.dims}`);
+assert(nrrdStudy.volume.values[1 + 2 * 4 + 3 * 16] === 321, `nrrd voxel ${nrrdStudy.volume.values[57]}`);
+assert(nrrdStudy.volume.spacing.join(',') === '2,3,4', `nrrd spacing ${nrrdStudy.volume.spacing}`);
+assert(nrrdStudy.volume.axisLps[0][0] === 1 && nrrdStudy.volume.axisLps[1][1] === 1, 'nrrd LPS axes');
+assert(nrrdStudy.labels?.classes.join(',') === '1', `nrrd classes ${nrrdStudy.labels?.classes}`);
+assert(nrrdStudy.meshes[0]!.positions.length > 0, 'nrrd mesh empty');
+
+const ras = await decodeNrrd(attachNrrd(nrrdHead.replace('left-posterior-superior', 'right-anterior-superior'), nrrdRaw));
+assert(ras.axisLps[0][0] === -1 && ras.axisLps[1][1] === -1 && ras.axisLps[2][2] === 1, `nrrd RAS ${ras.axisLps}`);
+
+const detachedHeader = new TextEncoder().encode(`${nrrdHead.trim()}\ndata file: vol.raw\n\n`);
+assert(nrrdDataFiles(detachedHeader).join() === 'vol.raw', 'nrrd data file');
+const detached = await decodeNrrd(detachedHeader, [nrrdRaw]);
+assert(detached.values[57] === 321, 'detached nrrd');
+
+const gzipped = attachNrrd(nrrdHead.replace('encoding: raw', 'encoding: gzip'), gzipSync(nrrdRaw));
+const fromGzip = await decodeNrrd(gzipped);
+assert(fromGzip.values[57] === 321, 'gzip nrrd');
+const wrapped = new Uint8Array(gzipSync(nrrdImage));
+const fromWrapped = await decodeNrrd(wrapped);
+assert(fromWrapped.values[57] === 321, 'nrrd.gz');
 
 console.log('selfcheck ok', {
   casSpacing: casStudy.volume.spacing.map((value) => Number(value.toFixed(3))),

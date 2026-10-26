@@ -1,11 +1,12 @@
 import { decodeDicom, type DicomSlice } from './dicom.ts';
+import { decodeNrrd } from './nrrd.ts';
 import { decodeLabels, decodeNifti } from './nifti.ts';
 import { downsample } from './downsample.ts';
 import { meshLabel } from './marchingCubes.ts';
 import type { Dims, Modality, PreparedStudy, ScalarVolume, Vec3 } from './types.ts';
 import { autoWindow } from './window.ts';
 
-export type ProgressFn = (ratio: number, label: string) => void;
+export type ProgressFn = (ratio: number) => void;
 
 function cross(a: Vec3, b: Vec3): Vec3 {
   return [
@@ -59,12 +60,12 @@ export function volumeFromSlices(slices: DicomSlice[], name: string): ScalarVolu
 }
 
 function finish(volume: ScalarVolume, labels: PreparedStudy['labels'], report?: ProgressFn): PreparedStudy {
-  report?.(0.72, 'mesh');
+  report?.(0.72);
   const meshes = (labels?.classes ?? []).map((classId) => {
     const mesh = meshLabel(labels!.data, volume.dims, volume.spacing, classId);
     return { classId, positions: mesh.positions, normals: mesh.normals };
   });
-  report?.(0.9, 'volume');
+  report?.(0.9);
   return {
     volume,
     labels,
@@ -88,7 +89,7 @@ function detectModality(values: ArrayLike<number>): Modality {
 }
 
 export function prepareNiftiBytes(image: Uint8Array, mask: Uint8Array | undefined, name: string, report?: ProgressFn): PreparedStudy {
-  report?.(0.15, 'image');
+  report?.(0.15);
   const decoded = decodeNifti(image);
   const modality = detectModality(decoded.values);
   const window = modality === 'CT' ? { center: 40, width: 400 } : autoWindow(decoded.values);
@@ -104,8 +105,35 @@ export function prepareNiftiBytes(image: Uint8Array, mask: Uint8Array | undefine
   };
   let labels: PreparedStudy['labels'] = null;
   if (mask) {
-    report?.(0.45, 'mask');
+    report?.(0.45);
     const decodedMask = decodeNifti(mask);
+    if (decodedMask.dims[0] !== decoded.dims[0] || decodedMask.dims[1] !== decoded.dims[1] || decodedMask.dims[2] !== decoded.dims[2]) {
+      throw new Error('Mask dimensions do not match the image');
+    }
+    labels = decodeLabels(decodedMask);
+  }
+  return finish(volume, labels, report);
+}
+
+export async function prepareNrrdBytes(image: Uint8Array, imageParts: readonly Uint8Array[] | undefined, mask: Uint8Array | undefined, maskParts: readonly Uint8Array[] | undefined, name: string, report?: ProgressFn): Promise<PreparedStudy> {
+  report?.(0.15);
+  const decoded = await decodeNrrd(image, imageParts);
+  const modality = detectModality(decoded.values);
+  const window = modality === 'CT' ? { center: 40, width: 400 } : autoWindow(decoded.values);
+  const volume: ScalarVolume = {
+    name,
+    dims: decoded.dims,
+    spacing: decoded.spacing,
+    axisLps: decoded.axisLps,
+    values: decoded.values,
+    modality,
+    windowCenter: window.center,
+    windowWidth: window.width,
+  };
+  let labels: PreparedStudy['labels'] = null;
+  if (mask) {
+    report?.(0.45);
+    const decodedMask = await decodeNrrd(mask, maskParts);
     if (decodedMask.dims[0] !== decoded.dims[0] || decodedMask.dims[1] !== decoded.dims[1] || decodedMask.dims[2] !== decoded.dims[2]) {
       throw new Error('Mask dimensions do not match the image');
     }
@@ -117,7 +145,7 @@ export function prepareNiftiBytes(image: Uint8Array, mask: Uint8Array | undefine
 export function prepareDicomBytes(slices: Uint8Array[], name: string, report?: ProgressFn): PreparedStudy {
   const decoded: DicomSlice[] = [];
   for (let index = 0; index < slices.length; index += 1) {
-    if (index % 20 === 0) report?.(0.1 + (0.5 * index) / slices.length, 'dicom');
+    if (index % 20 === 0) report?.(0.1 + (0.5 * index) / slices.length);
     decoded.push(decodeDicom(slices[index]!));
   }
   return finish(volumeFromSlices(decoded, name), null, report);

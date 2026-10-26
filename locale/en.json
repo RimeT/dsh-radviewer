@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "MedView",
-    "description": "Interactive 3D medical images, multi-class masks, and ROI meshes in a sidebar tab."
+    "description": "Interactive 3D medical images, multi-class masks, and ROI meshes in a sidebar tab. Opens a study when the chat points at DICOM, NIfTI, or NRRD."
   },
   "tab.title": "MedView",
   "guide.title": "MedView",
@@ -9,11 +9,10 @@
   "library.title": "Studies",
   "library.path": "Workspace folder",
   "library.refresh": "Scan",
-  "library.empty": "No DICOM series or NIfTI volumes in this folder.",
+  "library.empty": "No DICOM series, NIfTI, or NRRD volumes in this folder.",
   "library.slices": "{count} slices",
   "library.mask": "Mask",
   "loading": "Reading volume",
-  "loading.mesh": "Building ROI",
   "error.title": "Could not open this study",
   "views.axial": "Axial",
   "views.sagittal": "Sagittal",
@@ -22,14 +21,11 @@
   "preset.soft": "Soft",
   "preset.lung": "Lung",
   "preset.bone": "Bone",
-  "preset.auto": "Auto",
   "preset.native": "Native",
   "window": "W {width}  L {center}",
   "slice": "{index} / {count}",
-  "mask": "Mask",
   "opacity": "Opacity",
   "class": "Class {id}",
   "reset": "Reset",
-  "value": "Value {value}",
-  "noWebgl": "WebGL2 is not available in this view."
+  "value": "Value {value}"
 }

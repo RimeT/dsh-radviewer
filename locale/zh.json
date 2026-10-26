@@ -1,19 +1,18 @@
 {
   "meta": {
     "title": "医学三维",
-    "description": "在侧栏标签页中交互查看三维医学影像、多类别 mask 和 ROI。"
+    "description": "在侧栏标签页中交互查看三维医学影像、多类别 mask 和 ROI。对话指向 DICOM、NIfTI 或 NRRD 时会打开对应检查。"
   },
   "tab.title": "医学三维",
   "guide.title": "医学三维",
   "guide.description": "打开三维医学体数据",
   "library.path": "工作区文件夹",
   "library.refresh": "扫描",
-  "library.empty": "这个文件夹里没有 DICOM 序列或 NIfTI 体数据。",
+  "library.empty": "这个文件夹里没有 DICOM 序列、NIfTI 或 NRRD 体数据。",
   "library.title": "检查",
   "library.slices": "{count} 层",
   "library.mask": "Mask",
   "loading": "正在读取体数据",
-  "loading.mesh": "正在生成 ROI",
   "error.title": "无法打开这个检查",
   "views.axial": "轴位",
   "views.sagittal": "矢状位",
@@ -22,14 +21,11 @@
   "preset.soft": "软组织",
   "preset.lung": "肺",
   "preset.bone": "骨",
-  "preset.auto": "自动",
   "preset.native": "原始",
   "window": "W {width}  L {center}",
   "slice": "{index} / {count}",
-  "mask": "Mask",
   "opacity": "透明度",
   "class": "类别 {id}",
   "reset": "重置",
-  "value": "值 {value}",
-  "noWebgl": "当前视图没有 WebGL2。"
+  "value": "值 {value}"
 }
