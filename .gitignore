@@ -6,3 +6,4 @@ dist/
 .DS_Store
 dev-dist/
 .dsh-acl-recovery/
+docs/dsh-plugin-guide.md
